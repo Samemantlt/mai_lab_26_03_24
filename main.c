@@ -132,10 +132,12 @@ ExpressionNodeRef parse(char *str, int *i, int bracketPriority, int prevOperandP
 
 	ExpressionNodeRef left = {0, 0};
 	int length = strlen(str);
-	for (; *i < length; (*i)++)
+	while (*i < length)
 	{
-		if (isspace(str[*i]))
+		if (isspace(str[*i])) {
+			(*i)++;
 			continue;
+		}
 
 		if (isdigit(str[*i]) || (str[*i] == '-' && isNull(left)))
 		{
@@ -144,7 +146,6 @@ ExpressionNodeRef parse(char *str, int *i, int bracketPriority, int prevOperandP
 				printf("Error isdigit '!isNull(left)': %d", left.type);
 			}
 			left = readConstant(str, i);
-			(*i)--;
 			continue;
 		}
 
@@ -155,7 +156,7 @@ ExpressionNodeRef parse(char *str, int *i, int bracketPriority, int prevOperandP
 				printf("Error isalpha '!isNull(left)': %d", left.type);
 			}
 			left = readVariable(str, i);
-			(*i)--;
+			(*i)++;
 			continue;
 		}
 
@@ -170,7 +171,6 @@ ExpressionNodeRef parse(char *str, int *i, int bracketPriority, int prevOperandP
 			int operandPriority = getOperandPriority(operand);
 			if (operandPriority < prevOperandPriority)
 			{
-				(*i)--;
 				return left;
 			}
 
@@ -194,12 +194,12 @@ ExpressionNodeRef parse(char *str, int *i, int bracketPriority, int prevOperandP
 		if (str[*i] == '(')
 		{
 			(*i)++;
-			return parse(str, i, bracketPriority + 1, -1);
+			left = parse(str, i, bracketPriority + 1, -1);
+			(*i)++;
 		}
 
 		if (str[*i] == ')')
 		{
-			(*i)++;
 			return left;
 		}
 	}
@@ -266,13 +266,14 @@ void testVarExpr(char *expr, double variableValue, double expected)
 
 void tests()
 {
+	testExpr("(25+4)*-6", (25 + 4) * -6);
+	testExpr("5*(9+4)-8", 5 * (9 + 4) - 8);
 	testExpr("15  +67", 15 + 67);
 	testExpr("21*3", 21 * 3);
 	testExpr("21*-3", 21 * -3);
 	testExpr("21*(-3)", 21 * -3);
-	testExpr("25 + 4 * 6", 25 + 4 * 6);
+	testExpr("25+4*6", 25 + 4 * 6);
 	testExpr("25 + 4 * -6", 25 + 4 * -6);
-	testExpr("(25 + 4) * -6", (25 + 4) * -6);
 	testExpr("25 + (4 * -6)", 25 + (4 * -6));
 	testExpr("(55 + 33) / (11 * 8)", (55 + 33) / (11 * 8));
 	testExpr("60 / (4 + 3 * 2)", 60 / (4 + 3 * 2));
@@ -282,6 +283,7 @@ void tests()
 
 	testVarExpr("2 * a", 3, 2 * 3);
 	testVarExpr("5*a", 3, 5 * 3);
+	testVarExpr("5 * (a + 4) - 8", 9, 5 * (9 + 4) - 8);
 }
 
 void replaceVariable(ExpressionNodeRef *this, char variableName, ExpressionNodeRef to)
