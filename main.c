@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
@@ -147,7 +148,8 @@ ExpressionNodeRef parse(char *str, int *i, int bracketPriority, int prevOperandP
 			continue;
 		}
 
-		if (isalpha(str[*i])) {
+		if (isalpha(str[*i]))
+		{
 			if (!isNull(left))
 			{
 				printf("Error isalpha '!isNull(left)': %d", left.type);
@@ -262,7 +264,8 @@ void testVarExpr(char *expr, double variableValue, double expected)
 	}
 }
 
-void tests() {
+void tests()
+{
 	testExpr("15  +67", 15 + 67);
 	testExpr("21*3", 21 * 3);
 	testExpr("21*-3", 21 * -3);
@@ -281,14 +284,15 @@ void tests() {
 	testVarExpr("5*a", 3, 5 * 3);
 }
 
-void replaceVariable(ExpressionNodeRef* this, char variableName, ExpressionNodeRef to) {
+void replaceVariable(ExpressionNodeRef *this, char variableName, ExpressionNodeRef to)
+{
 	switch (this->type)
 	{
 	case Constant:
 		break;
 
 	case TwoOperand:
-		TwoOperandExpression* expr = this->twoOperandExpression;
+		TwoOperandExpression *expr = this->twoOperandExpression;
 		replaceVariable(&expr->left, variableName, to);
 		replaceVariable(&expr->right, variableName, to);
 		break;
@@ -296,13 +300,14 @@ void replaceVariable(ExpressionNodeRef* this, char variableName, ExpressionNodeR
 	case Variable:
 		*this = to;
 		break;
-	
+
 	default:
 		break;
 	}
 }
 
-char getOperand(Operand operand) {
+char getOperand(Operand operand)
+{
 	switch (operand)
 	{
 	case Add:
@@ -318,7 +323,8 @@ char getOperand(Operand operand) {
 	return (char)1;
 }
 
-void printNode(ExpressionNodeRef ref, int prevOperandPriority) {
+void printNode(ExpressionNodeRef ref, int prevOperandPriority)
+{
 	switch (ref.type)
 	{
 	case Constant:
@@ -337,26 +343,47 @@ void printNode(ExpressionNodeRef ref, int prevOperandPriority) {
 	case Variable:
 		printf("%c", ref.variableExpression->name);
 		break;
-	
+
 	default:
 		break;
 	}
+}
+
+char *readLine()
+{
+	int result;
+	size_t n = 0;
+	char *buf;
+
+	result = getline(&buf, &n, stdin);
+	if (result < 0)
+		return NULL;
+	return buf;
 }
 
 int main()
 {
 	tests();
 
-	ExpressionNodeRef expr = parseDefault("(8 - 3) * 3 * a + 4");
-	printNode(expr, -1);
-	printf("\n\n");
+	printf("Enter an expression: ");
+	char *exprStr = readLine();
 
-	ExpressionNodeRef toRepl = parseDefault("4 * 8 - 2");
-	replaceVariable(&expr, 'a', toRepl);
+	printf("Enter variable name: ");
+	char *variableNameStr = readLine();
 
-	double result = evaluate(expr, -100000);
+	printf("Enter a sub expression: ");
+	char *subExprStr = readLine();
+
+	ExpressionNodeRef expr = parseDefault(exprStr);
+	char variableName = variableNameStr[0];
+	ExpressionNodeRef subExpr = parseDefault(subExprStr);
+
+	printf("\nBefore: ");
 	printNode(expr, -1);
-	printf("\n\n\n%f\n", 5.0);
+	replaceVariable(&expr, variableName, subExpr);
+	printf("\nAfter: ");
+	printNode(expr, -1);
+	printf("\n");
 
 	return 0;
 }
